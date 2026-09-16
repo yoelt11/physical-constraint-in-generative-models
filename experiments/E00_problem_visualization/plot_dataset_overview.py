@@ -31,7 +31,12 @@ def plot_schematic(ax):
     ratio (height / width) so the other panel can match its box shape."""
     img = mpimg.imread(SCHEMATIC_PATH)
     ax.imshow(img)
-    ax.axis("off")
+    # Keep the box border visible (matching panel b's frame) instead of
+    # ax.axis("off") -- the two axes boxes are the same size regardless,
+    # but an invisible border made panel (a) look shorter, since most of
+    # the embedded image is its own title/legend whitespace, not ink.
+    ax.set_xticks([])
+    ax.set_yticks([])
     ax.set_title("(a) Mechanism (single pose, labeled)")
     return img.shape[0] / img.shape[1]
 
