@@ -10,27 +10,31 @@
 #let expectation(x) = $ upright(E)[#x] $
 
 #show: icml2025.with(
-  title: [Toy Problem: Constrained Four-Node System],
+  title: [Toy Problem: Pose Synthesis for a Four-Body Mechanism],
   keywords: (
     "flow matching",
     "constrained generation",
+    "pose synthesis",
     "physics-informed generative models",
   ),
   abstract: [
     A minimal geometric toy system is studied for isolating
-    constraint-enforcement mechanisms in flow matching. A four-node planar
-    linkage, parameterized by an intrinsic joint angle and a discrete
-    assembly branch, provides an analytically known, nonconvex feasible
-    manifold together with a controllable, multimodal target distribution.
-    On the same coordinates, equality, inequality, orientation, semantic,
-    and dynamical constraint families are defined, so that a single
+    constraint-enforcement mechanisms in flow matching. A single, fixed
+    four-body planar mechanism -- a four-bar linkage -- defines the task
+    as pose synthesis rather than shape generation: every sample is a
+    different valid pose of the same mechanism, parameterized by an
+    intrinsic joint angle and a discrete assembly branch, giving an
+    analytically known, nonconvex feasible manifold together with a
+    controllable, multimodal target distribution over poses. On the same
+    coordinates, equality, inequality, orientation, semantic, and
+    dynamical constraint families are defined, so that a single
     generative model and dataset can be reused across constraint types.
     This allows constraint-handling methods to be evaluated along two
     independent axes -- constraint violation and preservation of the true
     intrinsic distribution -- rather than validity rate alone.
   ],
   bibliography: none,
-  header: [Constrained Four-Node System],
+  header: [Pose Synthesis for a Four-Body Mechanism],
   appendix: none,
   // Anonymized: the template substitutes a placeholder author/affiliation
   // whenever accepted is false.
@@ -41,8 +45,13 @@
 
 A minimal geometric system of four nodes, $x_i in bb(R)^2$, is considered
 to isolate the effect of constraint enforcement in flow-matching models.
-The generative model operates in Cartesian coordinates, while the valid
-data distribution is restricted by analytically known constraints. This
+Crucially, the mechanism itself -- which nodes are linked, and the length
+of every link -- is fixed once and for all; the dataset does not contain
+different mechanisms, only different valid *poses* of this one mechanism.
+The generative task is therefore pose synthesis for a fixed four-body
+mechanism, not shape generation across varying structures. The generative
+model operates in Cartesian coordinates, while the valid data
+distribution is restricted by analytically known constraints. This
 provides a controlled setting in which constraint satisfaction can be
 evaluated independently from distributional fidelity.
 
