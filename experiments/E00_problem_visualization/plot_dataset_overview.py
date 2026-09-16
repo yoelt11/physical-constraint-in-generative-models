@@ -37,7 +37,7 @@ def plot_schematic(ax):
     # the embedded image is its own title/legend whitespace, not ink.
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title("(a) Mechanism (single pose, labeled)")
+    ax.set_title("(a) Mechanism (single pose, labeled)", fontweight="bold")
     return img.shape[0] / img.shape[1]
 
 
@@ -63,7 +63,7 @@ def plot_node_loci(ax, box_aspect):
     ax.scatter(*X2, color="black", marker="s", s=45, zorder=4)
     ax.annotate("$x_1$", X1, textcoords="offset points", xytext=(6, 6))
     ax.annotate("$x_2$", X2, textcoords="offset points", xytext=(6, 6))
-    ax.set_title("(b) Reachable positions of $x_3$, $x_4$")
+    ax.set_title("(b) Reachable positions of $x_3$, $x_4$", fontweight="bold")
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
     # Match the schematic's box shape (not just the data aspect) so both
@@ -77,7 +77,7 @@ def main():
     fig, axes = plt.subplots(1, 2, figsize=(11, 5.5))
     box_aspect = plot_schematic(axes[0])
     plot_node_loci(axes[1], box_aspect)
-    fig.suptitle("One fixed four-body mechanism: many valid poses")
+    fig.suptitle("One fixed four-body mechanism: many valid poses", fontweight="bold")
     fig.tight_layout()
     save_figure(fig, "dataset_overview", bbox_inches="tight")
 
