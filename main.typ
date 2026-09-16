@@ -88,6 +88,23 @@ multimodal distribution over these intrinsic variables can be selected
 such that satisfying $h(x) = 0$ alone is insufficient to recover the
 target distribution.
 
+// A plain #figure() is constrained to single-column width by the
+// template's show rule, which is too small for this two-panel image to
+// stay legible -- so this one spans the full page width instead, the
+// same way LaTeX's figure* would, via place(..., scope: "parent").
+#place(top + center, float: true, scope: "parent", clearance: 1.5em,
+  block(width: 100%, breakable: false, {
+    align(center, image("figures/E00_dataset_overview.png", width: 75%))
+    v(0.1in, weak: true)
+    align(center, block(width: 85%, text(size: 9pt)[
+      _Figure 1._ The mechanism at a single labeled pose (left) and the
+      reachable positions of the free nodes $x_3$, $x_4$ across all valid
+      poses (right). The mechanism itself -- topology and link lengths --
+      is fixed; only the pose ($theta$, $b$) varies across the dataset.
+    ]))
+  })
+)
+
 = Constraint Families
 
 The same system can be used to study several classes of constraints.
