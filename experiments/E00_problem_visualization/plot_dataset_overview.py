@@ -12,18 +12,31 @@ x3 and x4 jointly) is shown separately in the coupler-point curve of
 visualize_problem.py.
 """
 
+import pathlib
+
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
-from visualize_problem import X1, X2, BRANCH_COLORS, solve_linkage, save_figure, plot_mechanism
+from visualize_problem import X1, X2, BRANCH_COLORS, solve_linkage, save_figure
+
+SCHEMATIC_PATH = (
+    pathlib.Path(__file__).resolve().parent.parent.parent
+    / "figures" / "E00_mechanism_schematic.png"
+)
 
 
-def plot_mechanism_snapshots(ax):
-    plot_mechanism(ax)
-    ax.set_title("(a) One mechanism, several poses")
+def plot_schematic(ax):
+    """Embed the pre-rendered single-pose schematic; return its aspect
+    ratio (height / width) so the other panel can match its box shape."""
+    img = mpimg.imread(SCHEMATIC_PATH)
+    ax.imshow(img)
+    ax.axis("off")
+    ax.set_title("(a) Mechanism (single pose, labeled)")
+    return img.shape[0] / img.shape[1]
 
 
-def plot_node_loci(ax):
+def plot_node_loci(ax, box_aspect):
     thetas = np.linspace(0, 2 * np.pi, 2000)
     x3_locus = []
     x4_locus = {+1: [], -1: []}
@@ -39,23 +52,26 @@ def plot_node_loci(ax):
         pts = np.array(pts)
         tag = "+1" if branch == 1 else "-1"
         ax.plot(*pts.T, color=BRANCH_COLORS[branch], lw=1.5,
-                 label=rf"$x_4$ locus, branch $b={tag}$ (radius $\ell_{{41}}$ around $x_1$)")
+                 label=rf"$x_4$ locus, branch $b={tag}$")
 
     ax.scatter(*X1, color="black", marker="s", s=45, zorder=4)
     ax.scatter(*X2, color="black", marker="s", s=45, zorder=4)
     ax.annotate("$x_1$", X1, textcoords="offset points", xytext=(6, 6))
     ax.annotate("$x_2$", X2, textcoords="offset points", xytext=(6, 6))
-    ax.set_title("(b) Reachable positions of $x_3$, $x_4$ across all poses")
-    ax.set_aspect("equal")
+    ax.set_title("(b) Reachable positions of $x_3$, $x_4$")
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.12), fontsize=8)
+    # Match the schematic's box shape (not just the data aspect) so both
+    # panels render at the same height.
+    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_box_aspect(box_aspect)
+    ax.legend(loc="upper right", fontsize=7)
 
 
 def main():
     fig, axes = plt.subplots(1, 2, figsize=(11, 5.5))
-    plot_mechanism_snapshots(axes[0])
-    plot_node_loci(axes[1])
+    box_aspect = plot_schematic(axes[0])
+    plot_node_loci(axes[1], box_aspect)
     fig.suptitle("One fixed four-body mechanism: many valid poses")
     fig.tight_layout()
     save_figure(fig, "dataset_overview", bbox_inches="tight")
