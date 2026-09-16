@@ -4,3 +4,7 @@
 # Python
 __pycache__/
 *.pyc
+
+# Generated datasets (regenerate with src/e00_linkage_dataset.py,
+# src/e01_biped_dataset.py)
+data/
