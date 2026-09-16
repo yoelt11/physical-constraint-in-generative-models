@@ -16,6 +16,8 @@ Three panels:
       reproduce -- satisfying h(x) = 0 alone is not sufficient.
 """
 
+import pathlib
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -141,10 +143,12 @@ def main():
     fig.suptitle("Constrained four-bar linkage: mechanism, feasible manifold, and target distribution")
     fig.tight_layout()
 
-    out_dir = __file__.rsplit("/", 1)[0] + "/figures"
-    import os
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = out_dir + "/problem_overview.png"
+    # Figures from every experiment are collected in one place at the repo
+    # root, named "<experiment-id>_<description>.png" to avoid collisions.
+    experiment_dir = pathlib.Path(__file__).resolve().parent
+    experiment_id = experiment_dir.name.split("_", 1)[0]
+    figures_dir = experiment_dir.parent.parent / "figures"
+    out_path = figures_dir / f"{experiment_id}_problem_overview.png"
     fig.savefig(out_path, dpi=200)
     print(f"Saved {out_path}")
 
