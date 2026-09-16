@@ -135,6 +135,17 @@ def plot_target_distribution(ax):
     ax.legend(loc="upper right", fontsize=8)
 
 
+def save_figure(fig, description, dpi=200, **savefig_kwargs):
+    """Save into the repo-root figures/ folder as "<experiment-id>_<description>.png",
+    so figures from every experiment collect in one shared place."""
+    experiment_dir = pathlib.Path(__file__).resolve().parent
+    experiment_id = experiment_dir.name.split("_", 1)[0]
+    figures_dir = experiment_dir.parent.parent / "figures"
+    out_path = figures_dir / f"{experiment_id}_{description}.png"
+    fig.savefig(out_path, dpi=dpi, **savefig_kwargs)
+    print(f"Saved {out_path}")
+
+
 def main():
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     plot_mechanism(axes[0])
@@ -142,15 +153,7 @@ def main():
     plot_target_distribution(axes[2])
     fig.suptitle("Constrained four-bar linkage: mechanism, feasible manifold, and target distribution")
     fig.tight_layout()
-
-    # Figures from every experiment are collected in one place at the repo
-    # root, named "<experiment-id>_<description>.png" to avoid collisions.
-    experiment_dir = pathlib.Path(__file__).resolve().parent
-    experiment_id = experiment_dir.name.split("_", 1)[0]
-    figures_dir = experiment_dir.parent.parent / "figures"
-    out_path = figures_dir / f"{experiment_id}_problem_overview.png"
-    fig.savefig(out_path, dpi=200)
-    print(f"Saved {out_path}")
+    save_figure(fig, "problem_overview")
 
 
 if __name__ == "__main__":
