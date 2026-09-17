@@ -8,3 +8,9 @@ __pycache__/
 # Generated datasets (regenerate with src/e00_linkage_dataset.py,
 # src/e01_biped_dataset.py)
 data/
+
+# Python virtual environment (see requirements.txt)
+.venv/
+
+# Trained model checkpoints (regenerate via each experiment's train script)
+checkpoints/
