@@ -93,6 +93,33 @@ def sample(rng, params, dim, n, num_steps=100, return_trajectory=False):
     return x
 
 
+def guided_sample(rng, params, dim, n, guidance_grad_fn, guidance_strength=1.0,
+                   num_steps=100, return_trajectory=False):
+    """Same Euler integration as sample(), but with an inference-time
+    guidance term added directly to the learned velocity at every step:
+
+        x <- x + dt * (v_theta(x, t) - guidance_strength * t * grad(x))
+
+    where grad(x) = guidance_grad_fn(x) is the gradient of some scalar
+    constraint-violation energy (e.g. 0.5*h(x)**2 for one constraint
+    h), batched over x. No change to training -- this only affects
+    sampling. guidance_grad_fn is problem-specific and supplied by the
+    caller; this function has no knowledge of what constraint it is."""
+    x = jax.random.normal(rng, (n, dim))
+    dt = 1.0 / num_steps
+    trajectory = [x] if return_trajectory else None
+    for step_i in range(num_steps):
+        t = step_i * dt
+        v = vector_field(params, x, jnp.full((n,), t))
+        grad = guidance_grad_fn(x)
+        x = x + dt * (v - guidance_strength * t * grad)
+        if return_trajectory:
+            trajectory.append(x)
+    if return_trajectory:
+        return x, jnp.stack(trajectory)
+    return x
+
+
 def save_params(params, path):
     with open(path, "wb") as f:
         pickle.dump(jax.tree.map(lambda a: jax.device_get(a), params), f)
