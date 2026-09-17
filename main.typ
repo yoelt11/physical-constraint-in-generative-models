@@ -18,7 +18,7 @@
     "physics-informed generative models",
   ),
   abstract: [
-    Two minimal geometric toy systems are studied for isolating
+    Three minimal geometric toy systems are studied for isolating
     constraint-enforcement mechanisms in flow matching. The first is a
     fixed four-body planar mechanism -- a four-bar linkage -- whose
     closed loop gives an analytically known, nonconvex feasible manifold
@@ -26,17 +26,21 @@
     two-legged biped stick figure: an open tree of two independent limbs
     sharing a fixed hip, with no loop closure and hence no branch
     ambiguity, but more degrees of freedom concentrated within a single
-    limb. Together the two toy problems separate structural properties
-    -- closed loop versus tree, branch multimodality versus none -- that
-    either toy alone would conflate. On the same coordinates, equality,
-    inequality, orientation, semantic, and dynamical constraint families
-    are defined for both systems, so that constraint-handling methods
-    can be evaluated along two independent axes -- constraint violation
-    and preservation of the true intrinsic distribution -- across two
+    limb. The third reuses the biped's exact geometry and adds a
+    gait-phase coupling between the two legs, concretely realizing a
+    ground-contact constraint that is otherwise only described in the
+    abstract. Together the three toy problems separate structural
+    properties -- closed loop versus tree, branch multimodality versus
+    none -- and constraint mechanisms -- geometric versus phase-dependent
+    -- that any single toy would conflate. On the same coordinates,
+    equality, inequality, orientation, semantic, and dynamical constraint
+    families are defined, so that constraint-handling methods can be
+    evaluated along two independent axes -- constraint violation and
+    preservation of the true intrinsic distribution -- across
     structurally different mechanisms rather than just one.
   ],
   bibliography: none,
-  header: [Constrained Pose Synthesis: Two Toy Mechanisms],
+  header: [Constrained Pose Synthesis: Three Toy Mechanisms],
   appendix: none,
   // Anonymized: the template substitutes a placeholder author/affiliation
   // whenever accepted is false.
@@ -45,10 +49,10 @@
 
 = Overview
 
-Two minimal geometric systems are considered to isolate the effect of
+Three minimal geometric systems are considered to isolate the effect of
 constraint enforcement in flow-matching models, each built from a
 handful of nodes $x_i in bb(R)^2$ connected by rigid links of fixed
-length. In both cases the mechanism itself -- which nodes are linked,
+length. In every case the mechanism itself -- which nodes are linked,
 and the length of every link -- is fixed once and for all; the dataset
 does not contain different mechanisms, only different valid *poses* of
 a given one. The generative task is therefore pose synthesis for a
@@ -56,15 +60,18 @@ fixed mechanism, not shape generation across varying structures, and
 the generative model always operates in Cartesian coordinates while the
 valid data distribution is restricted by analytically known constraints.
 
-The two mechanisms are chosen to differ in exactly the structural
-property that matters most for this comparison. The four-bar linkage is
-a *closed loop*, which has a single shared degree of freedom and a
-discrete branch ambiguity. The two-legged biped is an *open tree* (two
+The first two mechanisms differ in exactly the structural property that
+matters most for this comparison. The four-bar linkage is a *closed
+loop*, which has a single shared degree of freedom and a discrete
+branch ambiguity. The two-legged biped is an *open tree* (two
 independent limbs sharing a hip), which has no branch ambiguity but
-several degrees of freedom concentrated within a single limb. This
-provides a controlled setting in which constraint satisfaction can be
-evaluated independently from distributional fidelity, across two
-structurally distinct mechanisms rather than just one.
+several degrees of freedom concentrated within a single limb. The third
+mechanism reuses the biped's exact structure and adds a gait-phase
+coupling between the two legs, turning an otherwise-hypothetical
+ground-contact constraint into a concretely realized one. This provides
+a controlled setting in which constraint satisfaction can be evaluated
+independently from distributional fidelity, across structurally
+distinct mechanisms rather than just one.
 
 = Toy Problem A: Four-Bar Linkage (Closed Loop)
 
@@ -160,10 +167,11 @@ therefore a natural complement to the closed loop: it removes the
 branch ambiguity, but concentrates more degrees of freedom, and a
 richer reachable set, within a single limb.
 
-Ground contact, foot-foot collision, and anatomical knee-bend limits are
-natural extensions of this toy problem -- see @sec-constraints -- but
-are not yet implemented in the generated dataset; the figure below
-shows the mechanism and its reachable region only.
+Ground contact and gait-phase coupling are realized concretely in Toy
+Problem C, below. Foot-foot collision and anatomical knee-bend limits
+remain open extensions (@sec-constraints), not yet implemented in
+either toy problem's dataset generator; the figure below shows Toy
+Problem B's static mechanism and its reachable region only.
 
 #place(top + center, float: true, scope: "parent", clearance: 1.5em,
   block(width: 100%, breakable: false, {
@@ -178,7 +186,51 @@ shows the mechanism and its reachable region only.
   })
 )
 
-= Comparing the Two Toy Problems
+= Toy Problem C: Gait-Coupled Walking Biped
+
+Toy Problem C reuses Toy Problem B's exact geometry -- the same hip
+$x_0$, the same thigh/shin lengths $l_1, l_2$ -- and adds a single
+shared gait-phase parameter $phi$ coupling the two legs,
+
+$
+  phi_A = phi, quad phi_B = (phi + pi) mod 2pi,
+$
+
+so that leg $B$ is always exactly half a cycle behind leg $A$. A fixed
+ground level $y_"ground" approx -1.666$ then determines two regimes for
+each leg. During *stance* ($phi_ell in [0, pi]$), its foot is held
+exactly on the ground,
+
+$
+  y(f_ell) = y_"ground",
+$
+
+while during *swing* ($phi_ell in (pi, 2pi]$), the knee flexes further
+to lift the foot clear,
+
+$
+  y(f_ell) > y_"ground".
+$
+
+This is a concrete realization of the semantic/conditional constraint
+family (@sec-constraints): the discrete phase (stance vs. swing)
+selects which equality or inequality applies to each foot, exactly as
+$c$ does in $h(x, c) = 0$, $g(x, c) <= 0$. Unlike Toy Problems A and B,
+this constraint is currently satisfied by a hand-designed kinematic law
+-- the hip angle oscillates and the knee angle is solved, in closed
+form, to keep the foot on the ground during stance -- implemented in
+`experiments/E02_biped_animation/`, rather than by a general-purpose
+dataset generator; it is not yet part of the `src/` pipeline alongside
+Toy Problems A and B. An animated rendering is available in the
+repository at `figures/E02_biped_walking_gait.gif`.
+
+= Comparing the Three Toy Problems
+
+Toy Problem C shares Toy Problem B's topology, generated state, and
+degrees of freedom exactly -- the comparison below is therefore
+structural, contrasting only Toy Problems A and B; what Toy Problem C
+adds is a constraint, not a new structure, and is discussed in
+@sec-constraints instead.
 
 #place(top + center, float: true, scope: "parent", clearance: 1.5em,
   block(width: 100%, breakable: false, {
@@ -205,7 +257,8 @@ shows the mechanism and its reachable region only.
       _Table 1._ Neither toy problem alone exercises every constraint
       family well: closed-loop branch multimodality and orientation are
       specific to Toy A, while Toy B is the more natural host for
-      gait-phase conditioning and node-node collision (see
+      node-node collision, and its gait-phase-coupled extension (Toy C)
+      concretely realizes gait-phase conditioning (see
       @sec-constraints).
     ]))
   })
@@ -213,12 +266,12 @@ shows the mechanism and its reachable region only.
 
 = Constraint Families <sec-constraints>
 
-The same two systems can be used to study several classes of
-constraints.
+The same systems can be used to study several classes of constraints.
 
 *Nonlinear equality constraints.* The linkage constraints above enforce
 fixed pairwise distances and provide a simple example of generation on
-an explicitly known manifold, realized directly by both toy problems.
+an explicitly known manifold, realized directly by all three toy
+problems.
 
 *Inequality and collision constraints.* For nodes represented as disks of
 radius $r_i$, collision avoidance is expressed as
@@ -262,11 +315,11 @@ $
 
 For the four-bar linkage, an edge labeled as rigid may impose a
 fixed-distance constraint, whereas a non-contact relation may impose a
-minimum-distance inequality. The two-legged biped gives this family a
-more concretely motivated instance: a discrete gait-phase variable
-$c in {"left-stance", "right-stance"}$ could select which foot's height
-is pinned to the ground ($y = 0$) while the other swings freely above it
-($y > 0$) -- a natural next extension, not yet implemented.
+minimum-distance inequality. Toy Problem C gives this family a
+concretely realized instance: the gait phase $phi$ selects, independently
+for each leg, whether its foot's height is pinned to the ground
+($y = y_"ground"$, stance) or free to rise above it ($y > y_"ground"$,
+swing).
 
 *Dynamical constraints.* By augmenting each node with a velocity $v_i$,
 admissible velocities for a holonomically constrained system satisfy
