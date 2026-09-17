@@ -20,15 +20,9 @@ import matplotlib.pyplot as plt
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 import flow_matching as fm  # noqa: E402
-from e00_linkage_dataset import X1, X2, L23, L34, L41, solve_linkage_batch  # noqa: E402
-from plot_metrics_e00 import infer_intrinsic  # noqa: E402
-
-
-def per_constraint_residuals(x3, x4):
-    h1 = np.linalg.norm(x3 - X2, axis=-1) - L23
-    h2 = np.linalg.norm(x4 - x3, axis=-1) - L34
-    h3 = np.linalg.norm(x4 - X1, axis=-1) - L41
-    return {"h1 (x3-x2 length)": h1, "h2 (x4-x3 length)": h2, "h3 (x4-x1 length)": h3}
+from e00_linkage_dataset import (  # noqa: E402
+    solve_linkage_batch, per_constraint_residuals, infer_intrinsic,
+)
 
 
 def plot_per_constraint(ax, components):

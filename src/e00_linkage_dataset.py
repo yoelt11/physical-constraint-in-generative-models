@@ -50,6 +50,38 @@ def solve_linkage_batch(theta):
     return x3, mid + h[:, None] * perp, mid - h[:, None] * perp
 
 
+def per_constraint_residuals(x3, x4):
+    """h1, h2, h3 evaluated separately (not aggregated), for any (x3, x4) --
+    including model output that doesn't exactly satisfy them."""
+    h1 = np.linalg.norm(x3 - X2, axis=-1) - L23
+    h2 = np.linalg.norm(x4 - x3, axis=-1) - L34
+    h3 = np.linalg.norm(x4 - X1, axis=-1) - L41
+    return {"h1 (x3-x2 length)": h1, "h2 (x4-x3 length)": h2, "h3 (x4-x1 length)": h3}
+
+
+def constraint_residuals(x3, x4):
+    """Aggregate max|h_i(x)| over the three constraints."""
+    components = per_constraint_residuals(x3, x4)
+    return np.max(np.abs(np.stack(list(components.values()))), axis=0)
+
+
+def infer_intrinsic(x3, x4):
+    """Recover (theta_hat, branch_hat) from any (x3, x4) -- including
+    model output that doesn't exactly satisfy h(x) = 0 -- by inverting
+    the forward kinematics: theta_hat from the angle of x3 relative to
+    x2, branch_hat from which side of the circle-intersection line x4
+    falls on (the same mid/perp construction as solve_linkage_batch)."""
+    theta_hat = np.mod(np.arctan2(x3[:, 1] - X2[1], x3[:, 0] - X2[0]), 2 * np.pi)
+    diff = x3 - X1
+    d = np.linalg.norm(diff, axis=-1)
+    a = (L41 ** 2 - L34 ** 2 + d ** 2) / (2 * d)
+    mid = X1 + (a / d)[:, None] * diff
+    perp = np.stack([-diff[:, 1], diff[:, 0]], axis=-1) / d[:, None]
+    side = np.sum((x4 - mid) * perp, axis=-1)
+    branch_hat = np.where(side >= 0, 1, -1)
+    return theta_hat, branch_hat
+
+
 def generate_dataset(n_samples, seed=0):
     rng = np.random.default_rng(seed)
     theta, branch = sample_theta_and_branch(rng, n_samples)
@@ -70,11 +102,7 @@ def generate_dataset(n_samples, seed=0):
 
 
 def check_constraints(dataset):
-    x1, x2, x3, x4 = dataset["x1"], dataset["x2"], dataset["x3"], dataset["x4"]
-    h1 = np.linalg.norm(x3 - x2, axis=-1) - L23
-    h2 = np.linalg.norm(x4 - x3, axis=-1) - L34
-    h3 = np.linalg.norm(x4 - x1, axis=-1) - L41
-    max_residual = np.max(np.abs(np.stack([h1, h2, h3])))
+    max_residual = constraint_residuals(dataset["x3"], dataset["x4"]).max()
     assert max_residual < 1e-8, f"constraint residual too large: {max_residual}"
     print(f"  max |h(x)| residual: {max_residual:.2e} (should be ~0, by construction)")
 

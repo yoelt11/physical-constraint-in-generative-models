@@ -27,46 +27,10 @@ import matplotlib.pyplot as plt
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 import flow_matching as fm  # noqa: E402
+from metrics import wasserstein_1d, binary_js_divergence  # noqa: E402
 from e00_linkage_dataset import (  # noqa: E402
-    X1, X2, L23, L34, L41, BRANCH_PROB_PLUS, sample_theta_and_branch,
+    BRANCH_PROB_PLUS, sample_theta_and_branch, constraint_residuals, infer_intrinsic,
 )
-
-
-def constraint_residuals(x3, x4):
-    h1 = np.linalg.norm(x3 - X2, axis=-1) - L23
-    h2 = np.linalg.norm(x4 - x3, axis=-1) - L34
-    h3 = np.linalg.norm(x4 - X1, axis=-1) - L41
-    return np.max(np.abs(np.stack([h1, h2, h3])), axis=0)
-
-
-def infer_intrinsic(x3, x4):
-    """Recover (theta_hat, branch_hat) from the model's own raw output by
-    inverting the forward kinematics -- the same mid/perp construction
-    used by circle_intersections in e00_linkage_dataset.py, but applied
-    to whatever x3 the model actually produced (not an exact-radius one)."""
-    theta_hat = np.mod(np.arctan2(x3[:, 1] - X2[1], x3[:, 0] - X2[0]), 2 * np.pi)
-    diff = x3 - X1
-    d = np.linalg.norm(diff, axis=-1)
-    a = (L41 ** 2 - L34 ** 2 + d ** 2) / (2 * d)
-    mid = X1 + (a / d)[:, None] * diff
-    perp = np.stack([-diff[:, 1], diff[:, 0]], axis=-1) / d[:, None]
-    side = np.sum((x4 - mid) * perp, axis=-1)
-    branch_hat = np.where(side >= 0, 1, -1)
-    return theta_hat, branch_hat
-
-
-def wasserstein_1d(a, b):
-    """Exact 1-D Wasserstein-1 distance between two equal-size empirical
-    samples: mean absolute gap between sorted order statistics."""
-    n = min(len(a), len(b))
-    return float(np.mean(np.abs(np.sort(a)[:n] - np.sort(b)[:n])))
-
-
-def binary_js_divergence(p, q, eps=1e-12):
-    p, q = np.clip([p, 1 - p], eps, 1), np.clip([q, 1 - q], eps, 1)
-    m = 0.5 * (p + q)
-    kl = lambda a, b: np.sum(a * np.log(a / b))
-    return float(0.5 * kl(p, m) + 0.5 * kl(q, m))
 
 
 def plot_constraint_error(ax, resid):
