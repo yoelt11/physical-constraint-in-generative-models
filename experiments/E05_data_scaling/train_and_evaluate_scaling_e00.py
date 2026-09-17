@@ -28,7 +28,7 @@ from e00_linkage_dataset import (  # noqa: E402
 )
 
 DIM = 4
-N_TRAIN_VALUES = [100, 1_000, 10_000, 100_000]
+N_TRAIN_VALUES = [20, 50, 100, 200, 500, 1_000, 10_000, 100_000]
 N_EVAL = 5000
 STEPS = 20_000
 
@@ -51,12 +51,20 @@ def mode_occupancy(theta, tol_std=2.0):
 
 
 def run_one(data_full, n_train, eval_seed):
-    train_data = data_full[:n_train]
-    rng = jax.random.PRNGKey(0)
-    init_key, train_key = jax.random.split(rng)
-    params = fm.init_params(init_key, dim=DIM)
-    params, losses = fm.train(train_key, params, train_data, dim=DIM,
-                               steps=STEPS, batch_size=min(512, n_train), log_every=0)
+    ckpt_path = REPO_ROOT / "checkpoints" / f"e00_scaling_n{n_train}.pkl"
+    if ckpt_path.exists():
+        print(f"  (reusing existing checkpoint {ckpt_path.name})")
+        params = fm.load_params(ckpt_path)
+        losses = [float("nan")]
+    else:
+        train_data = data_full[:n_train]
+        rng = jax.random.PRNGKey(0)
+        init_key, train_key = jax.random.split(rng)
+        params = fm.init_params(init_key, dim=DIM)
+        params, losses = fm.train(train_key, params, train_data, dim=DIM,
+                                   steps=STEPS, batch_size=min(512, n_train), log_every=0)
+        ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+        fm.save_params(params, ckpt_path)
 
     sample_rng = jax.random.PRNGKey(eval_seed)
     final = np.asarray(fm.sample(sample_rng, params, dim=DIM, n=N_EVAL, num_steps=100))
@@ -69,10 +77,6 @@ def run_one(data_full, n_train, eval_seed):
     p_gen_plus = float(np.mean(branch_gen == 1))
     js = binary_js_divergence(p_gen_plus, BRANCH_PROB_PLUS)
     occ = mode_occupancy(theta_gen)
-
-    ckpt_path = REPO_ROOT / "checkpoints" / f"e00_scaling_n{n_train}.pkl"
-    ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-    fm.save_params(params, ckpt_path)
 
     return {
         "n_train": n_train,
