@@ -37,7 +37,10 @@
     families are defined, so that constraint-handling methods can be
     evaluated along two independent axes -- constraint violation and
     preservation of the true intrinsic distribution -- across
-    structurally different mechanisms rather than just one.
+    structurally different mechanisms rather than just one. A shared
+    flow-matching baseline, post-hoc projection, a training-data scaling
+    study, and targeted inference-time guidance are evaluated on this
+    basis for Toy Problem A.
   ],
   bibliography: none,
   header: [Constrained Pose Synthesis: Three Toy Mechanisms],
@@ -355,3 +358,133 @@ exists), or other invariant geometric quantities. This distinction
 prevents solutions that collapse onto a small subset of valid
 configurations from being considered successful solely because the
 constraints are satisfied.
+
+= Experiments
+
+The framework above is applied to Toy Problem A. A single shared
+flow-matching architecture -- a small multilayer-perceptron vector
+field, trained by conditional flow matching and sampled by Euler
+integration of the learned ODE -- is used throughout. It operates
+directly on the ambient coordinates $x = (x_3, x_4)$, with no learned
+latent space, so every constraint function below applies directly to
+the model's own output rather than to a decoded reconstruction.
+
+*Unconstrained baseline.* Trained on 100,000 samples with no constraint
+enforcement of any kind, the model reproduces the target distribution
+closely -- $W_1 (theta) = 0.036$ rad, branch Jensen-Shannon divergence
+$approx 0$ -- while still violating $h(x) = 0$: mean residual $0.014$,
+median $0.012$, but a heavy tail (99th percentile $0.047$, maximum
+$0.38$). The violation is not evenly distributed: branch $b=-1$, whose
+reachable arc is geometrically narrower and which is the minority class
+in training (30% vs. 70%), is systematically worse than $b=+1$ across
+every $theta$, while the three individual constraints $h_1, h_2, h_3$
+are violated almost identically -- the asymmetry is about *which
+region* of the manifold, not *which link*.
+
+#place(top + center, float: true, scope: "parent", clearance: 1.5em,
+  block(width: 100%, breakable: false, {
+    align(center, image("figures/E03_e00_metrics.png", width: 75%))
+    v(0.1in, weak: true)
+    align(center, block(width: 85%, text(size: 9pt)[
+      _Figure 3._ Unconstrained baseline, Toy Problem A: constraint
+      error (left) and distributional coverage of $theta$ and the
+      branch (center, right), computed over 5000 samples.
+    ]))
+  })
+)
+
+*Post-hoc projection.* A Gauss-Newton correction (Levenberg-Marquardt
+damped, since the undamped solve produced a numerically singular step
+for roughly 1 in 5000 samples) is applied to the baseline's raw output
+after generation, with no retraining. It reduces the mean constraint
+residual from $0.014$ to $1.0 times 10^(-7)$ -- about six orders of
+magnitude -- while leaving distribution coverage essentially unchanged
+($W_1 (theta)$: $0.036$ to $0.037$ rad; branch JS: unchanged) and
+closing the branch asymmetry, with both branches landing at the same
+$approx 10^(-7)$ to $10^(-8)$ residual afterward. On this data-rich
+baseline, projection is close to free.
+
+#place(top + center, float: true, scope: "parent", clearance: 1.5em,
+  block(width: 100%, breakable: false, {
+    align(center, image("figures/E04_e00_projection_before_after.png", width: 75%))
+    v(0.1in, weak: true)
+    align(center, block(width: 85%, text(size: 9pt)[
+      _Figure 4._ Post-hoc Gauss-Newton projection, before vs. after:
+      constraint error collapses by six orders of magnitude (a) while
+      $theta$ and branch coverage are essentially unchanged (b, c), and
+      the branch asymmetry closes for both branches equally (d).
+    ]))
+  })
+)
+
+*Data scaling.* The same architecture and training recipe, varied only
+in training-set size ($n_"train" in {20, 50, 100, 200, 500, 1000,
+10000, 100000}$), separates the two evaluation axes cleanly: constraint
+error plateaus by $n_"train" approx 500$-$1000$, but distributional
+coverage remains far more data-hungry -- $W_1 (theta)$ reaches $0.36$
+rad at its worst ($n_"train" = 200$) versus $0.036$ at full data, and
+rises non-monotonically before $n_"train" = 500$ across three
+consecutive points, unlikely to be pure training noise. No
+training-set size produces full mode collapse, but mode proportions
+are measurably skewed at low $n_"train"$. Inspecting the $n_"train" =
+50$ model directly shows why: generated samples form tight clusters
+*around* each of the 50 training points rather than covering the curve
+smoothly between them -- local interpolation, not manifold-wide
+generalization.
+
+#place(top + center, float: true, scope: "parent", clearance: 1.5em,
+  block(width: 100%, breakable: false, {
+    align(center, image("figures/E05_e00_data_scaling.png", width: 75%))
+    v(0.1in, weak: true)
+    align(center, block(width: 85%, text(size: 9pt)[
+      _Figure 5._ Unconstrained baseline vs. training-set size:
+      constraint error plateaus quickly (a), while $theta$ coverage (b)
+      and branch coverage (c) remain data-hungry, with no full mode
+      collapse at any size (d).
+    ]))
+  })
+)
+
+*Targeted inference-time guidance.* On the degraded $n_"train" = 50$
+baseline, a guidance term is added directly to the learned velocity
+during sampling, targeting $h_3$ alone -- chosen for having the worst
+tail, not mean, across every data regime tested --
+
+$
+  x arrow.l x + Delta t thin (v_theta (x, t) - eta t nabla E(x)),
+$
+
+$
+  E(x) = 1/2 h_3 (x)^2,
+$
+
+where $eta$ is the guidance strength. Unlike projection on the
+data-rich baseline, this reveals a genuine tradeoff: $h_3$'s worst
+violations shrink with guidance strength, but $h_2$ -- which shares the
+variable $x_4$ with $h_3$ -- gets *worse* (mean $0.022$ to $0.024$), and
+both $W_1 (theta)$ ($0.29$ to $0.35$) and branch JS (roughly doubling)
+degrade monotonically past a small guidance strength. A low guidance
+strength is a mild win-win; pushing further trades away distribution
+coverage for tail-only constraint improvement.
+
+#place(top + center, float: true, scope: "parent", clearance: 1.5em,
+  block(width: 100%, breakable: false, {
+    align(center, image("figures/E06_e00_guidance_spatial.png", width: 65%))
+    v(0.1in, weak: true)
+    align(center, block(width: 85%, text(size: 9pt)[
+      _Figure 6._ $h_3$-only inference-time guidance on the
+      $n_"train" = 50$ baseline, against the true feasible manifold and
+      the 50 training points: higher guidance strength visibly tightens
+      generated clusters, but the aggregate coverage cost quantified
+      above is a subtle redistribution, not obvious by eye here (see
+      `figures/E06_e00_h3_guidance.png` for the full strength sweep).
+    ]))
+  })
+)
+
+These four experiments -- baseline, projection, data scaling, and
+targeted guidance -- are implemented in `src/flow_matching.py`,
+`src/projection.py`, and `experiments/E03` through `E06`, all built on
+Toy Problem A. Toy Problems B and C, and the inequality/orientation
+constraint families described above, remain open for the same
+treatment.
